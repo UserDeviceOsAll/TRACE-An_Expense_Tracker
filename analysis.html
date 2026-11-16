@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Business analytics with a spending forecast, payment flow, cost centres and previous interval comparisons.">
+    <meta name="theme-color" content="#101222">
+    <title>Analytics · Trace</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2236%22%20height%3D%2236%22%20viewBox%3D%220%200%2040%2040%22%20aria-hidden%3D%22true%22%3E%3Crect%20width%3D%2240%22%20height%3D%2240%22%20rx%3D%2212%22%20fill%3D%22%23ab96ff%22%2F%3E%3Cpath%20d%3D%22M8%2014l21-5-3%207-7%202-4%2013-6%201%204-13-7%202z%22%20fill%3D%22%23171531%22%2F%3E%3Cpath%20d%3D%22m22%2022%209-3-2%206-9%203z%22%20fill%3D%22%23f2ffff%22%2F%3E%3C%2Fsvg%3E">
+    <link rel="stylesheet" href="style.css">
+    <script src="ledger.js" defer></script>
+    <script src="reports.js" defer></script>
+    <script src="charts.js" defer></script>
+    <script src="explorer.js" defer></script>
+    <script src="profiles.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body data-page="analysis">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="rail">
+      <a class="brand" href="index.html" aria-label="Trace home"><svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="12" fill="#ab96ff"/><path d="M8 14l21-5-3 7-7 2-4 13-6 1 4-13-7 2z" fill="#171531"/><path d="m22 22 9-3-2 6-9 3z" fill="#f2ffff"/></svg><span>Trace</span></a>
+      <label class="ledger-picker"><span class="icon" data-icon="briefcase" aria-hidden="true"></span><span>Workspace<select id="ledger" aria-label="Choose workspace"><option value="business">Business ledger</option><option value="example">Example ledger</option></select></span>
+      </label>
+      <nav class="nav" aria-label="Primary navigation">
+        <a href="index.html"><span class="icon" data-icon="grid" aria-hidden="true"></span><span>Overview</span></a>
+        <a href="analysis.html" aria-current="page"><span class="icon" data-icon="chart" aria-hidden="true"></span><span>Analytics</span></a>
+        <a href="history.html"><span class="icon" data-icon="history" aria-hidden="true"></span><span>History</span></a>
+        <a href="input.html"><span class="icon" data-icon="plusbox" aria-hidden="true"></span><span>New expense</span></a>
+        <a href="settings.html"><span class="icon" data-icon="sliders" aria-hidden="true"></span><span>Settings</span></a>
+      </nav>
+      <div class="rail-foot"><button class="rail-link" id="theme-toggle" type="button"><span class="icon" data-icon="sun" aria-hidden="true"></span><span>Light appearance</span></button>
+      </div>
+    </header>
+    <main class="workspace" id="main">
+      <div class="topbar"><span class="breadcrumb"><span class="icon" data-icon="briefcase" aria-hidden="true"></span> Workspace <b>/</b> <span id="crumb">Analytics</span></span><span class="local-status"><i></i> On this device</span>
+      </div>
+      <div class="page">
+        <noscript>Enable JavaScript to open the ledger and its charts.</noscript>
+        <aside id="example-banner" class="example-banner" hidden><span><span class="icon" data-icon="layers" aria-hidden="true"></span><strong>Example ledger</strong><span>Explore with sample transactions.</span></span><button id="use-business" type="button">Use my ledger →</button>
+        </aside>
+        <div class="page-head">
+          <div>
+            <h1>Spending analytics</h1><p>Follow the money from payment to expense type, and compare the pace with the previous interval.</p>
+          </div>
+          <div class="actions"><button class="button quiet" type="button" id="print-report">Print report</button><button class="button date-button" type="button" data-range><span class="icon" data-icon="calendar" aria-hidden="true"></span><span class="range-label">Select interval</span><span class="icon" data-icon="chevron" aria-hidden="true"></span></button>
+          </div>
+        </div>
+        <section class="kpis" id="kpis" aria-label="Interval totals">
+        </section>
+        <div class="report-grid">
+          <article class="card curve-card">
+            <div class="card-head">
+              <div>
+                <h2>Spending trajectory</h2><p id="curve-period"></p>
+
+              </div>
+              <div class="key"><span class="violet-dot">Recorded</span><span class="mint-dot">Forecast</span>
+              </div>
+            </div>
+            <fieldset class="view-switch" id="view-switch"><legend class="sr">Chart view</legend>
+              <label><input type="radio" name="chart-view" value="cumulative" checked><span>Cumulative</span></label>
+              <label><input type="radio" name="chart-view" value="expenses"><span>Expenses</span></label>
+              <label><input type="radio" name="chart-view" value="category"><span>Expense types</span></label>
+              <label><input type="radio" name="chart-view" value="merchant"><span>Vendors</span></label>
+            </fieldset>
+            <details class="chart-filters"><summary>Filter chart <span id="scope-count"></span></summary>
+              <div class="scope-controls">
+                <label>Expense type<select id="forecast-series"></select></label>
+                <label>Vendor<select id="scope-vendor"></select></label>
+                <label id="compare-label" hidden>Compare with<select id="compare-vendor"></select></label>
+                <label>Purchase time<select id="scope-time"><option value="">Any time</option><option value="0">00:00–05:59</option><option value="1">06:00–11:59</option><option value="2">12:00–17:59</option><option value="3">18:00–23:59</option><option value="unknown">Time unknown</option></select></label>
+                <label>Cost centre<select id="scope-centre"></select></label>
+                <label>Purchase details<input type="search" id="scope-text" placeholder="Description, tag, payment…"></label>
+              </div>
+            </details>
+            <label class="series-label" id="bucket-label" hidden>Group spending by <select id="bucket-unit"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option></select></label>
+            <p id="scope-summary" class="fine" aria-live="polite"></p>
+            <div class="forecast-hero" id="forecast-hero" hidden>
+              <div><span class="forecast-label">Modeled cumulative spend</span><strong id="forecast-total"></strong><small id="forecast-date"></small></div>
+              <label class="horizon-label">Forecast horizon<select id="forecast-horizon">
+                <option value="auto">Report default</option><option value="7">Next 7 days</option><option value="30">Next 30 days</option><option value="90">Next 90 days</option>
+              </select></label>
+            </div>
+            <div id="forecast-chart" class="plot">
+            </div>
+            <section class="occurrence-panel" id="occurrence-panel" hidden><h3>Purchase-day outlook</h3>
+              <div class="day-outlook" id="day-outlook"></div><p class="fine" id="occurrence-evidence"></p></section>
+            <dl class="forecast-stats" id="forecast-stats" hidden></dl>
+            <div class="chart-caption"><span id="forecast-note"></span>
+              <details class="table-disclosure">
+                <summary>Chart data</summary>
+                <div id="curve-table">
+                </div>
+              </details>
+            </div>
+          </article>
+          <article class="card mix-card">
+            <div class="card-head">
+              <div>
+                <h2>Expense mix</h2><p>Share by expense type</p>
+              </div>
+              <span class="icon" data-icon="ring" aria-hidden="true"></span>
+            </div>
+            <div id="mix-chart">
+            </div>
+            <div id="mix-legend" class="legend-list">
+            </div>
+            <a class="sub-link mix-more" href="analysis.html#type-report">View all types →</a>
+            <section class="budget-outlook" aria-labelledby="allowance-title" hidden><h3 id="allowance-title">Interval allowance</h3>
+              <p id="allowance-label"></p><div class="allowance-track" aria-hidden="true"><i></i><b></b></div><small id="allowance-outcome"></small>
+            </section>
+          </article>
+        </div>
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>Payment flow</h2><p>Ribbon width shows how much each payment method contributed to each expense type.</p>
+            </div>
+            <span class="icon" data-icon="flow" aria-hidden="true"></span>
+          </div>
+          <div id="flow-chart" class="plot">
+          </div>
+          <details class="table-disclosure">
+            <summary>View payment flows</summary>
+            <div id="flow-table">
+            </div>
+          </details>
+        </article>
+        <div class="report-pair">
+          <article class="card">
+            <div class="card-head">
+              <div>
+              <h2>Interval comparison</h2><p id="comparison-dates"></p>
+              <label>Group bars by<select id="trend-grouping"><option value="even">Equal time blocks</option><option value="month">Calendar month</option></select></label>
+              </div>
+            </div>
+            <div class="key"><span class="violet-dot">Selected</span><span class="grey-dot">Previous</span>
+            </div>
+            <div class="plot" id="trend-chart">
+            </div>
+            <details class="table-disclosure">
+              <summary>Compare totals</summary>
+              <div id="trend-table">
+              </div>
+            </details>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2>Weekday pattern</h2><p>Average spend per elapsed occurrence</p>
+              </div>
+            </div>
+            <div class="bars" id="weekday-chart">
+            </div>
+          </article>
+        </div>
+        <div class="report-pair">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2>Cost centres</h2><p>Spend by team</p>
+              </div>
+            </div>
+            <div class="bars" id="centre-chart">
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2>Spending commitments</h2><p id="commitments"></p>
+              </div>
+            </div>
+            <div id="nature-chart" class="bars">
+            </div>
+            <p class="fine" id="vendor-insight"></p>
+          </article>
+        </div>
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>Spend calendar</h2><p id="calendar-period"></p>
+            </div>
+            <span class="heat-key">Low <i></i><i></i><i></i><i></i> High</span>
+          </div>
+          <div id="spend-calendar" class="heat-grid" aria-label="Spend by day">
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>How a warning is decided</h2><p>Inspect the recorded amount, cap and forecast behind one rule.</p>
+            </div>
+            <label>Spending rule<select id="decision-rule"></select>
+            </label>
+          </div>
+          <ol id="decision-flow" class="decision-flow" aria-label="Warning decision flowchart">
+          </ol>
+        </article>
+        <section class="card" id="type-report" aria-labelledby="type-report-title">
+          <div class="card-head"><div><h2 id="type-report-title">Budget vs actual by type</h2>
+          <p>Compare every type with the preceding interval and its effective spending cap.</p></div></div>
+          <div class="table-wrap" tabindex="0" role="region" aria-label="All expense types">
+            <table><caption class="sr">Type spend, prior spend, change, cap and remaining allowance</caption>
+              <thead><tr><th scope="col">Expense type</th><th scope="col" class="num">Recorded</th><th scope="col" class="num">Previous</th><th scope="col" class="num">Change</th><th scope="col" class="num">Interval cap</th><th scope="col" class="num">Remaining</th></tr></thead>
+              <tbody id="type-report-rows"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="alerts-heading">
+          <div class="card-head">
+            <div>
+              <h2 id="alerts-heading">Early warnings</h2><p id="watch-caption">Against the selected interval</p>
+            </div>
+            <a class="sub-link" href="settings.html">Manage rules →</a>
+          </div>
+          <div id="alerts-list" class="alert-list" aria-live="polite">
+          </div>
+        </section>
+      </div>
+      <footer><span>Trace · Expense workspace</span>
+      </footer>
+    </main>
+    <dialog id="modal" aria-labelledby="modal-title">
+      <form id="modal-form">
+        <div class="dialog-head">
+          <h2 id="modal-title">Settings</h2><button type="button" id="modal-close" class="icon-button" aria-label="Close dialog">×</button>
+        </div>
+        <div id="modal-body">
+        </div>
+        <p id="modal-error" class="error" role="alert"></p>
+        <div class="actions dialog-actions"><button type="button" class="button quiet" id="modal-cancel">Cancel</button><button type="submit" class="button primary" id="modal-save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite">
+    </div>
+  </body>
+</html>
