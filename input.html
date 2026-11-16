@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Add a business expense with quick templates, vendor, receipt, cost centre and a live budget check.">
+    <meta name="theme-color" content="#101222">
+    <title>New expense · Trace</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2236%22%20height%3D%2236%22%20viewBox%3D%220%200%2040%2040%22%20aria-hidden%3D%22true%22%3E%3Crect%20width%3D%2240%22%20height%3D%2240%22%20rx%3D%2212%22%20fill%3D%22%23ab96ff%22%2F%3E%3Cpath%20d%3D%22M8%2014l21-5-3%207-7%202-4%2013-6%201%204-13-7%202z%22%20fill%3D%22%23171531%22%2F%3E%3Cpath%20d%3D%22m22%2022%209-3-2%206-9%203z%22%20fill%3D%22%23f2ffff%22%2F%3E%3C%2Fsvg%3E">
+    <link rel="stylesheet" href="style.css">
+    <script src="ledger.js" defer></script>
+    <script src="reports.js" defer></script>
+    <script src="charts.js" defer></script>
+    <script src="settings.js" defer></script>
+    <script src="transactions.js" defer></script>
+    <script src="profiles.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body data-page="input">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="rail">
+      <a class="brand" href="index.html" aria-label="Trace home"><svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="12" fill="#ab96ff"/><path d="M8 14l21-5-3 7-7 2-4 13-6 1 4-13-7 2z" fill="#171531"/><path d="m22 22 9-3-2 6-9 3z" fill="#f2ffff"/></svg><span>Trace</span></a>
+      <label class="ledger-picker"><span class="icon" data-icon="briefcase" aria-hidden="true"></span><span>Workspace<select id="ledger" aria-label="Choose workspace"><option value="business">Business ledger</option><option value="example">Example ledger</option></select></span>
+      </label>
+      <nav class="nav" aria-label="Primary navigation">
+        <a href="index.html"><span class="icon" data-icon="grid" aria-hidden="true"></span><span>Overview</span></a>
+        <a href="analysis.html"><span class="icon" data-icon="chart" aria-hidden="true"></span><span>Analytics</span></a>
+        <a href="history.html"><span class="icon" data-icon="history" aria-hidden="true"></span><span>History</span></a>
+        <a href="input.html" aria-current="page"><span class="icon" data-icon="plusbox" aria-hidden="true"></span><span>New expense</span></a>
+        <a href="settings.html"><span class="icon" data-icon="sliders" aria-hidden="true"></span><span>Settings</span></a>
+      </nav>
+      <div class="rail-foot"><button class="rail-link" id="theme-toggle" type="button"><span class="icon" data-icon="sun" aria-hidden="true"></span><span>Light appearance</span></button>
+      </div>
+    </header>
+    <main class="workspace" id="main">
+      <div class="topbar"><span class="breadcrumb"><span class="icon" data-icon="briefcase" aria-hidden="true"></span> Workspace <b>/</b> <span id="crumb">New expense</span></span><span class="local-status"><i></i> On this device</span>
+      </div>
+      <div class="page">
+        <noscript>Enable JavaScript to open the ledger and its charts.</noscript>
+        <aside id="example-banner" class="example-banner" hidden><span><span class="icon" data-icon="layers" aria-hidden="true"></span><strong>Example ledger</strong><span>Explore with sample transactions.</span></span><button id="use-business" type="button">Use my ledger →</button>
+        </aside>
+        <div class="page-head">
+          <div>
+            <h1 id="entry-title">New expense</h1><p>Record a purchase with your saved defaults, or choose a quick entry.</p>
+          </div>
+          <div class="actions"><a class="button secondary" href="settings.html#defaults"><span class="icon" data-icon="sliders" aria-hidden="true"></span> Entry defaults</a>
+          </div>
+        </div>
+        <div class="entry-grid">
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2>Expense details</h2><p id="entry-workspace"></p>
+              </div>
+            </div>
+            <form id="expense-form">
+              <fieldset class="fields">
+                <legend class="sr">Expense details</legend>
+                <label>Expense type<select id="category" name="category" required></select>
+                </label>
+                <label>Amount (₹)<input id="amount" name="amount" type="number" min=".01" max="10000000" step=".01" inputmode="decimal" required>
+                </label>
+                <label class="wide">Description<input id="description" name="description" type="text" maxlength="80" list="suggest-descriptions" required><datalist id="suggest-descriptions"></datalist>
+                </label>
+                <label>Date<input id="date" name="date" type="date" required>
+                </label>
+                <label>Purchase time (optional)<input type="time" name="time" id="purchase-time"></label>
+                  <label>Payment method<select id="payment-method" name="paymentMethod"></select>
+                </label>
+                <label>Vendor<input id="merchant" name="merchant" type="text" maxlength="60" list="vendors" placeholder="Unspecified"><datalist id="vendors"></datalist>
+                </label>
+                <label>Cost centre<input id="centre" name="centre" type="text" list="centres" maxlength="50" required><datalist id="centres"></datalist>
+                </label>
+              </fieldset>
+              <details class="entry-details" id="more-details">
+                <summary>Payment status, receipt &amp; notes</summary>
+                <div class="fields">
+                  <label>Payment status<select id="expense-status" name="status"></select>
+                  </label>
+                  <label>Frequency<select name="recurring" id="recurring"></select>
+                  </label>
+                  <label>Spending style<select name="nature" id="nature"><option value="essential">Essential</option><option value="flexible">Flexible</option></select>
+                  </label>
+                  <label>Tags<input id="tags" name="tags" maxlength="80" placeholder="Separate tags with commas">
+                  </label>
+                  <label class="wide">Note<textarea name="note" id="note" rows="2" maxlength="400"></textarea>
+                  </label>
+                  <label class="wide">Receipt image<input id="receipt" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG or WebP, up to 400 KB.</small>
+                  </label>
+                  <div class="wide" id="receipt-preview">
+                  </div>
+                </div>
+              </details>
+              <p class="error" id="form-error" role="alert"></p>
+              <div class="actions"><button id="save-expense" class="button primary" type="submit">Save expense</button><a href="history.html" class="button quiet">Cancel</a>
+              </div>
+            </form>
+          </section>
+          <aside class="stack">
+            <section class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Quick entry</h2><p>Apply a template or repeat a recent purchase.</p>
+                </div>
+              </div>
+              <div id="templates" class="shortcut-list">
+              </div>
+              <div id="recent-templates" class="shortcut-list">
+              </div>
+            </section>
+            <section class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Budget impact</h2><button class="text-button" type="button" data-range>Change report dates</button><p id="impact-range"></p>
+                </div>
+              </div>
+              <div id="entry-impact" aria-live="polite">
+              </div>
+              <a class="sub-link" href="settings.html#rules">Adjust limits →</a>
+            </section>
+          </aside>
+        </div>
+      </div>
+      <footer><span>Trace · Expense workspace</span>
+      </footer>
+    </main>
+    <dialog id="modal" aria-labelledby="modal-title">
+      <form id="modal-form">
+        <div class="dialog-head">
+          <h2 id="modal-title">Settings</h2><button type="button" id="modal-close" class="icon-button" aria-label="Close dialog">×</button>
+        </div>
+        <div id="modal-body">
+        </div>
+        <p id="modal-error" class="error" role="alert"></p>
+        <div class="actions dialog-actions"><button type="button" class="button quiet" id="modal-cancel">Cancel</button><button type="submit" class="button primary" id="modal-save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite">
+    </div>
+  </body>
+</html>
